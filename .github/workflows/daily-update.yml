@@ -1,0 +1,49 @@
+name: Daily Repository Update
+
+on:
+  schedule:
+    # Runs at 14:30 UTC every day (specific time as required)
+    - cron: "30 14 * * *"
+  workflow_dispatch: # Allow manual triggers
+
+jobs:
+  daily-update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup for 23f2000226@ds.study.iitm.ac.in daily automation
+        run: |
+          echo "Setting up daily automation task for DevSync Solutions"
+          echo "Email: 23f2000226@ds.study.iitm.ac.in"
+          date
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Run IMDb scraper
+        run: |
+          uv run --with httpx,lxml,cssselect python scrape.py
+
+      - name: Create daily activity log
+        run: |
+          echo "Daily automated update - $(date)" >> daily-activity.log
+          echo "Repository updated by GitHub Actions" >> daily-activity.log
+          echo "---" >> daily-activity.log
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          if git diff --staged --quiet; then
+            echo "No changes to commit, creating empty commit for daily activity"
+            git commit --allow-empty -m "Daily automated update - $(date) [skip ci]"
+          else
+            git commit -m "Daily automated update with scraped data - $(date) [skip ci]"
+          fi
+          git push
